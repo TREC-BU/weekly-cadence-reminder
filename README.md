@@ -12,6 +12,8 @@ Posts the open tasks from the Notion **Weekly Cadence** database that are dated 
 
 ## Deploying
 
-The host deploys itself: every 5 minutes `update.sh` checks `origin/main`, and when there's a new commit it checks it out and reinstalls `crontab.txt`. So to change the code or the schedule, push to `main` and it's live within 5 minutes. Don't edit files on the host; they get overwritten.
+Every push to `main` runs the **Deploy** GitHub Action (`.github/workflows/deploy.yml`), which SSHes into the host and runs `update.sh`: it checks out `origin/main` and reinstalls `crontab.txt`. To change the code or the schedule, push to `main`. You can also re-run it from the Actions tab (**Deploy → Run workflow**). Don't edit files on the host; they get overwritten.
 
-Logs on the host: `~/weekly-cadence-reminder/digest.log` (digest runs) and `update.log` (deploys). To send one now: `ssh oracle python3 weekly-cadence-reminder/weekly_digest.py`.
+The workflow's key (`DEPLOY_SSH_KEY` secret) is restricted in the host's `~/.ssh/authorized_keys` to running `update.sh` only, so it can't open a shell. `DEPLOY_KNOWN_HOSTS` holds the host's SSH fingerprint.
+
+Logs on the host: `~/weekly-cadence-reminder/digest.log`. To send one now: `ssh oracle python3 weekly-cadence-reminder/weekly_digest.py`.

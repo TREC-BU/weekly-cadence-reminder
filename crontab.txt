@@ -2,6 +2,4 @@
 CRON_TZ=America/New_York
 # Digest: Sundays and Thursdays 3:00 PM Eastern
 0 15 * * 0,4 /usr/bin/python3 $HOME/weekly-cadence-reminder/weekly_digest.py >> $HOME/weekly-cadence-reminder/digest.log 2>&1
-# Auto-deploy: pull main every 5 minutes
-*/5 * * * * $HOME/weekly-cadence-reminder/update.sh >> $HOME/weekly-cadence-reminder/update.log 2>&1
 # END weekly-cadence-reminder
