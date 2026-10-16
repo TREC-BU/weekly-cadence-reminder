@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
-# Copy the script to the Oracle host and install the weekly cron job.
+# One-time setup of the Oracle host, or re-run to push a new .env.
+# After this, the host deploys itself from origin/main (see update.sh).
 set -euo pipefail
 
 HOST="${HOST:-oracle}"
 DIR="weekly-cadence-reminder"
+REPO="git@github.com:TREC-BU/weekly-cadence-reminder.git"
 cd "$(dirname "$0")"
 
-ssh "$HOST" "mkdir -p ~/$DIR"
-scp weekly_digest.py "$HOST:~/$DIR/"
+# Turn ~/$DIR into a checkout of the repo (works whether or not it already exists)
+ssh "$HOST" bash -s <<EOF
+set -euo pipefail
+mkdir -p ~/$DIR
+if [ ! -d ~/$DIR/.git ]; then
+  tmp=\$(mktemp -d)
+  git clone --quiet --no-checkout "$REPO" "\$tmp/repo"
+  mv "\$tmp/repo/.git" ~/$DIR/
+  rm -rf "\$tmp"
+fi
+EOF
+
 [ -f .env ] && scp .env "$HOST:~/$DIR/.env" && ssh "$HOST" "chmod 600 ~/$DIR/.env"
 
-# Sundays and Thursdays 3:00 PM Eastern (CRON_TZ handles daylight saving; host is on GMT)
-ssh "$HOST" bash -s <<EOF
-( crontab -l 2>/dev/null | grep -v "$DIR" | grep -v '^CRON_TZ=America/New_York' ;
-  echo 'CRON_TZ=America/New_York' ;
-  echo '0 15 * * 0,4 /usr/bin/python3 \$HOME/$DIR/weekly_digest.py >> \$HOME/$DIR/digest.log 2>&1 # $DIR' ) | crontab -
-crontab -l
-EOF
+ssh "$HOST" "cd ~/$DIR && git fetch --quiet origin main && git reset --hard --quiet origin/main && ./update.sh --force && crontab -l"
